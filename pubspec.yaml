@@ -1,0 +1,44 @@
+name: geominder
+description: "A new Nowa project."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.2.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  geofence_service: ^6.0.0+1
+  permission_handler: ^11.3.1
+  app_settings: ^5.0.0
+  
+
+  # Firebase
+  firebase_core: ^3.1.1
+  firebase_auth: ^5.1.1
+
+  # State Management & Services
+  provider: ^6.1.5
+  shared_preferences: ^2.5.3
+  http: ^1.2.2 # <-- ADDED for API calls
+  flutter_dotenv: ^5.1.0 # <-- MOVED to the correct section
+
+  # UI & Utilities
+  cupertino_icons: ^1.0.8
+  nowa_runtime: ^0.1.2
+  flutter_html: ^3.0.0
+  flutter_svg: ^2.2.0
+  collection: ^1.19.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - .env
