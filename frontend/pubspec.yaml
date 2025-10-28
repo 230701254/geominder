@@ -9,29 +9,38 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+
+  provider: ^6.1.2
+  # Permissions & Location
   permission_handler: ^11.3.1
-  google_sign_in: ^6.2.1
-  # Packages for background and notifications
-  flutter_background_service: ^5.0.5
-  flutter_local_notifications: ^17.1.2
+  geolocator: ^12.0.0
 
   # Firebase Packages
   firebase_core: ^3.1.1
   firebase_auth: ^5.1.1
   cloud_firestore: ^5.0.2
 
-  # Other Packages
-  shared_preferences: ^2.2.3
-  http: ^1.2.1
+  # Background & Notifications
+  flutter_background_service: ^5.0.5
+  flutter_local_notifications: ^17.1.2
+
+  # Google Sign-In
+  google_sign_in: ^6.2.1
+
+  # Maps & Networking
   flutter_map: ^6.1.0
-  geolocator: ^12.0.0
+  http: ^1.2.1
+
+  # Utilities
+  shared_preferences: ^2.2.3
   uuid: ^4.4.0
+
+  # UI Icons
   cupertino_icons: ^1.0.8
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-
   flutter_lints: ^4.0.0
 
 flutter:

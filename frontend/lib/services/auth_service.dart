@@ -1,41 +1,54 @@
-// lib/services/auth_service.dart
-
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  // Sign up with email & password
+  // 🆕 Sign up with email & password and create Firestore user document
   Future<User?> signUpWithEmailAndPassword(String email, String password) async {
     try {
-      final UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
+      // Create user in Firebase Auth
+      final UserCredential userCredential =
+          await _auth.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
-      return userCredential.user;
+
+      final User? user = userCredential.user;
+
+      if (user != null) {
+        // Store user info in Firestore
+        await _firestore.collection('users').doc(user.uid).set({
+          'uid': user.uid,
+          'email': user.email,
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+      }
+
+      return user;
     } on FirebaseAuthException catch (e) {
-      // You can handle specific errors like 'email-already-in-use' here
-      print("Error signing up: ${e.message}");
+      print("🔥 Error signing up: ${e.message}");
       return null;
     }
   }
 
-  // Sign in with email & password
+  // 🔑 Sign in with email & password
   Future<User?> signInWithEmailAndPassword(String email, String password) async {
     try {
-      final UserCredential userCredential = await _auth.signInWithEmailAndPassword(
+      final UserCredential userCredential =
+          await _auth.signInWithEmailAndPassword(
         email: email,
         password: password,
       );
       return userCredential.user;
     } on FirebaseAuthException catch (e) {
-      // You can handle specific errors like 'user-not-found' or 'wrong-password' here
-      print("Error signing in: ${e.message}");
+      print("⚠️ Error signing in: ${e.message}");
       return null;
     }
   }
 
-  // Sign out
+  // 🚪 Sign out
   Future<void> signOut() async {
     await _auth.signOut();
   }

@@ -7,6 +7,7 @@ import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
 import '../firebase_options.dart';
 import '../models/alarm_model.dart';
 import 'live_location_service.dart';
@@ -55,16 +56,12 @@ Future<void> initializeService() async {
 /// Background service entry point
 @pragma('vm:entry-point')
 void onStart(ServiceInstance service) async {
-  // Register all necessary plugins for background isolate
   DartPluginRegistrant.ensureInitialized();
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Firebase
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-
   final liveLocationService = LiveLocationService();
 
-  // Run periodic task every 1 minute
   Timer.periodic(const Duration(minutes: 1), (timer) async {
     Position? position;
     try {
@@ -73,18 +70,16 @@ void onStart(ServiceInstance service) async {
         timeLimit: const Duration(seconds: 30),
       );
     } catch (e) {
-      // Couldn’t get location, just skip this cycle
-      return;
+      return; // Skip this cycle if location fails
     }
 
-    // Update live location
     liveLocationService.updateUserLocation(position);
     service.invoke('updateLocation', {
       "latitude": position.latitude,
       "longitude": position.longitude,
     });
 
-    // Check stored alarms
+    // Load stored alarms
     final prefs = await SharedPreferences.getInstance();
     final alarmsString = prefs.getString('alarms');
     if (alarmsString == null) return;
@@ -93,28 +88,74 @@ void onStart(ServiceInstance service) async {
         .map((i) => AlarmModel.fromJson(i))
         .toList();
 
-    bool triggered = false;
+    // --- Hill Climbing Optimization ---
+    final activeAlarms =
+        alarms.where((alarm) => alarm.isActive == true).toList();
 
-    for (var alarm in alarms) {
-      if (alarm.isActive) {
-        final dist = Geolocator.distanceBetween(
-          position.latitude,
-          position.longitude,
-          alarm.latitude,
-          alarm.longitude,
+    if (activeAlarms.isEmpty) return;
+
+    AlarmModel? bestAlarm;
+    double bestDistance = double.infinity;
+
+    for (var alarm in activeAlarms) {
+      final dist = Geolocator.distanceBetween(
+        position.latitude,
+        position.longitude,
+        alarm.latitude,
+        alarm.longitude,
+      );
+
+      // 🧠 Optional AI Hill-Climb Trigger via Flask Backend
+      try {
+        final url = Uri.parse('http://192.168.1.2:5000/hillclimb'); // <-- change IP if needed
+        final response = await http.post(
+          url,
+          headers: {'Content-Type': 'application/json'},
+          body: json.encode({
+            'distance': dist,
+            'radius': alarm.radius,
+          }),
         );
 
-        // Check if within range
-        if (dist <= alarm.radius) {
-          showNotification(alarm.name);
-          alarm.isActive = false;
-          triggered = true;
+        if (response.statusCode == 200) {
+          final data = json.decode(response.body);
+          bool shouldTrigger = data['trigger'] ?? false;
+
+          if (shouldTrigger) {
+            flutterLocalNotificationsPlugin.show(
+              DateTime.now().millisecond,
+              'AI Triggered 🎯',
+              'Hill Climbing optimized your location match for ${alarm.name}!',
+              const NotificationDetails(
+                android: AndroidNotificationDetails(
+                  notificationChannelId,
+                  'GeoMinder Service',
+                  importance: Importance.high,
+                  priority: Priority.high,
+                  playSound: true,
+                  icon: '@mipmap/ic_launcher',
+                ),
+              ),
+            );
+          }
         }
+      } catch (e) {
+        print('AI trigger error: $e');
+      }
+
+      // Local optimization (normal Hill Climb)
+      if (dist < bestDistance) {
+        bestDistance = dist;
+        bestAlarm = alarm;
       }
     }
 
-    // Save updated alarms if any triggered
-    if (triggered) {
+    // Trigger if best alarm is within radius
+    if (bestAlarm != null && bestDistance <= bestAlarm.radius) {
+      showNotification(bestAlarm.name);
+      bestAlarm.isActive = false;
+
+      // Update stored alarms
       await prefs.setString(
         'alarms',
         json.encode(alarms.map((a) => a.toJson()).toList()),
@@ -128,7 +169,7 @@ void showNotification(String alarmName) {
   flutterLocalNotificationsPlugin.show(
     DateTime.now().millisecond,
     'Approaching Destination!',
-    'Alarm: $alarmName',
+    'Alarm: $alarmName (Optimized by AI)',
     const NotificationDetails(
       android: AndroidNotificationDetails(
         notificationChannelId,
@@ -136,7 +177,7 @@ void showNotification(String alarmName) {
         importance: Importance.high,
         priority: Priority.high,
         playSound: true,
-        icon: '@mipmap/ic_launcher', // Safe default icon
+        icon: '@mipmap/ic_launcher',
       ),
     ),
   );

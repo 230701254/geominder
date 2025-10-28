@@ -85,4 +85,5 @@ class DefaultFirebaseOptions {
     storageBucket: 'geominder-app-5b51c.firebasestorage.app',
     measurementId: 'G-FZGGMEK62D',
   );
+
 }

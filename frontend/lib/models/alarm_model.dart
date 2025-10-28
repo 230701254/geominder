@@ -7,6 +7,8 @@ class AlarmModel {
   final double longitude;
   final double radius;
   bool isActive;
+  List<String> sharedWith; // 👈 list of Gmail IDs this alarm is shared with
+  String? sharedBy; // 👈 optional field for showing who shared it
 
   AlarmModel({
     required this.id,
@@ -15,9 +17,11 @@ class AlarmModel {
     required this.longitude,
     required this.radius,
     this.isActive = true,
+    this.sharedWith = const [],
+    this.sharedBy,
   });
 
-  // --- NEW: Convert AlarmModel object to a Map (JSON) ---
+  // --- Convert AlarmModel object to JSON ---
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -26,18 +30,22 @@ class AlarmModel {
       'longitude': longitude,
       'radius': radius,
       'isActive': isActive,
+      'sharedWith': sharedWith,
+      'sharedBy': sharedBy,
     };
   }
 
-  // --- NEW: Create AlarmModel object from a Map (JSON) ---
+  // --- Create AlarmModel object from JSON ---
   factory AlarmModel.fromJson(Map<String, dynamic> json) {
     return AlarmModel(
       id: json['id'],
       name: json['name'],
-      latitude: json['latitude'],
-      longitude: json['longitude'],
-      radius: json['radius'],
-      isActive: json['isActive'],
+      latitude: (json['latitude'] as num).toDouble(),
+      longitude: (json['longitude'] as num).toDouble(),
+      radius: (json['radius'] as num).toDouble(),
+      isActive: json['isActive'] ?? true,
+      sharedWith: List<String>.from(json['sharedWith'] ?? []),
+      sharedBy: json['sharedBy'], // 👈 this handles alarms shared *to* the user
     );
   }
 }
